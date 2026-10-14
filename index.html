@@ -1,0 +1,326 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>International Business Midterm Jeopardy - Round 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one-screen classroom board. Header, 5x7 tile grid, team scoreboard. Clue opens as a full-screen overlay sized for screen sharing. */
+:root{
+  --ground:#07123a;      /* board backdrop */
+  --panel:#0e2175;       /* tiles and cards */
+  --panel-hi:#1a36a8;    /* hovered tile */
+  --line:#2a43a6;
+  --gold:#f6c744;        /* values and highlights */
+  --ink:#f3f6ff;
+  --ink-soft:#a9b8ee;
+  --good:#3ddc97;
+  --bad:#ff6b6b;
+  --used:#0a1a52;
+  --display:'Oswald','Arial Narrow',Impact,sans-serif;
+  --body:'Source Sans 3','Segoe UI',Arial,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:16px;padding-inline:clamp(16px,2vw,32px);padding-block:14px 24px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.top{display:flex;gap:12px 24px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(1.4rem,2.6vw,2.2rem);letter-spacing:.08em;text-transform:uppercase;margin:0;text-wrap:balance}
+h1 small{display:block;font-family:var(--body);font-weight:600;font-size:.8rem;letter-spacing:.12em;color:var(--ink-soft);margin-top:2px}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.btn{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 14px;font-weight:600}
+.btn:hover{background:var(--panel-hi)}
+.btn.gold{background:var(--gold);color:#241a00;border-color:var(--gold)}
+.btn.gold:hover{background:#ffd966}
+.btn.danger{border-color:var(--bad);color:var(--bad)}
+.btn[disabled]{opacity:.45;cursor:default}
+.boardwrap{overflow-x:auto}
+.board{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;min-width:720px}
+.cat{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 8px;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:2px;min-height:clamp(56px,8vh,80px)}
+.cat b{font-family:var(--display);font-weight:700;font-size:clamp(.95rem,1.5vw,1.35rem);letter-spacing:.04em;text-transform:uppercase;line-height:1.15;text-wrap:balance}
+.cat span{font-size:.78rem;color:var(--gold);font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:6px;font-family:var(--display);font-weight:700;font-size:clamp(1.3rem,2.6vw,2.4rem);color:var(--gold);min-height:clamp(40px,7.5vh,72px);font-variant-numeric:tabular-nums;transition:background .12s}
+.tile:hover{background:var(--panel-hi)}
+.tile.used{background:var(--used);border-color:transparent;color:transparent;cursor:default}
+.tile.used:hover{background:var(--used)}
+.pick{margin:14px 0 8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;color:var(--ink-soft)}
+.pick b{color:var(--gold);font-family:var(--display);letter-spacing:.06em;font-size:1.15rem;text-transform:uppercase}
+.teams{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.team{background:var(--panel);border:2px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.team.turn{border-color:var(--gold)}
+.team input.nm{background:transparent;border:0;border-bottom:1px dashed var(--line);color:var(--ink);font-family:var(--display);font-weight:500;font-size:1.05rem;letter-spacing:.05em;text-transform:uppercase;width:100%;padding:2px 0;min-width:0}
+.score{font-family:var(--display);font-weight:700;font-size:clamp(1.8rem,3.2vw,2.8rem);font-variant-numeric:tabular-nums;line-height:1.1}
+.score.neg{color:var(--bad)}
+.adj{display:flex;gap:6px}
+.adj button{flex:1;background:var(--used);border:1px solid var(--line);border-radius:4px;padding:2px 0;font-size:.85rem;color:var(--ink-soft)}
+.adj button:hover{background:var(--panel-hi);color:var(--ink)}
+.turnbtn{font-size:.75rem;background:none;border:0;color:var(--ink-soft);text-align:left;padding:0;text-decoration:underline}
+.setup{display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--ink-soft);font-size:.9rem;flex-wrap:wrap}
+/* overlay */
+.ov{position:fixed;inset:0;background:var(--ground);z-index:10;overflow-y:auto;padding-inline:clamp(16px,4vw,64px);padding-block:max(18px,env(safe-area-inset-top,0px)) 28px;display:flex;flex-direction:column;gap:18px}
+.ov[hidden]{display:none}
+.ovhead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.tag{font-family:var(--display);color:var(--gold);letter-spacing:.1em;text-transform:uppercase;font-size:1.2rem}
+.timer{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.clock{font-family:var(--display);font-weight:700;font-size:2.4rem;min-width:3.2ch;text-align:center;font-variant-numeric:tabular-nums}
+.clock.low{color:var(--bad)}
+.bar{height:8px;background:var(--used);border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;width:100%;background:var(--gold);transition:width .25s linear}
+.kind{font-family:var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);font-size:1rem}
+.q{font-size:clamp(1.6rem,3.4vw,3rem);font-weight:600;line-height:1.28;max-width:62ch;margin:0;text-wrap:pretty}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:10px;max-width:1200px}
+.opt{display:flex;gap:14px;align-items:flex-start;background:var(--panel);border:2px solid var(--line);border-radius:8px;padding:14px 16px;font-size:clamp(1.15rem,2.2vw,1.8rem);line-height:1.3;text-align:left;cursor:default;min-width:0}
+.opt .l{font-family:var(--display);font-weight:700;color:var(--gold);min-width:1.2ch}
+.opt.tfopt{justify-content:center;font-family:var(--display);font-weight:700;letter-spacing:.1em;font-size:clamp(1.6rem,3vw,2.6rem)}
+.opt.right{border-color:var(--good);background:#0d3b3c}
+.opt.right .l{color:var(--good)}
+.opt.dim{opacity:.4}
+.award{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;max-width:1200px}
+.arow{display:flex;gap:6px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.arow span{flex:1;font-family:var(--display);letter-spacing:.04em;text-transform:uppercase;overflow-wrap:anywhere}
+.arow button{border-radius:6px;border:1px solid var(--line);background:var(--used);padding:6px 10px;font-weight:700;font-variant-numeric:tabular-nums}
+.arow button.on.up{background:var(--good);color:#042;border-color:var(--good)}
+.arow button.on.dn{background:var(--bad);color:#300;border-color:var(--bad)}
+.acts{display:flex;gap:10px;flex-wrap:wrap}
+.wager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;max-width:1200px}
+.wager label{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;font-family:var(--display);letter-spacing:.04em;text-transform:uppercase}
+.wager input{font:inherit;font-family:var(--body);font-size:1.4rem;padding:6px 8px;border-radius:6px;border:1px solid var(--line);background:var(--ground);color:var(--ink);width:100%}
+.wager small{font-family:var(--body);text-transform:none;letter-spacing:0;color:var(--ink-soft)}
+.winner{font-family:var(--display);font-size:clamp(1.6rem,3vw,2.6rem);color:var(--gold);letter-spacing:.06em;text-transform:uppercase}
+.key{max-width:1000px;display:flex;flex-direction:column;gap:16px}
+.key h3{font-family:var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin:0 0 6px;font-size:1.2rem}
+.key ol{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:10px}
+.key .ka{color:var(--good);font-weight:700}
+.key .kq{overflow-wrap:anywhere}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+</head><body>
+<div class="top">
+  <h1>International Business Midterm Review · Round 2<small>MAN4602 · Chapters 1, 3, 4, 5 and 8 · Questions taken word for word from the test banks</small></h1>
+  <div class="tools">
+    <button class="btn" id="keyBtn">Answer key</button>
+    <button class="btn gold" id="finalBtn">Final Jeopardy</button>
+    <button class="btn danger" id="resetBtn">Reset game</button>
+  </div>
+</div>
+
+<div class="boardwrap"><div class="board" id="board"></div></div>
+
+<div class="pick">Next team to pick: <b id="pickName"></b> <span style="font-size:.85rem">(click “pick next” on a team to change)</span></div>
+<div class="teams" id="teams"></div>
+<div class="setup">
+  <span>Teams:</span>
+  <button class="btn" id="tMinus" aria-label="Remove a team">−</button>
+  <button class="btn" id="tPlus" aria-label="Add a team">+</button>
+  <label for="tsec">Time per clue</label>
+  <select id="tsec" class="btn"><option value="30">30 s</option><option value="45">45 s</option><option value="60" selected>60 s</option><option value="90">90 s</option></select>
+  <span>Click a team name to rename it.</span>
+</div>
+
+<div class="ov" id="ov" hidden role="dialog" aria-modal="true" aria-label="Clue"></div>
+
+<script>
+const DATA = {"cats": [{"ch": "Ch. 1", "name": "Globalization", "clues": [{"t": "tf", "q": "The World Trade Organization and GATT helped reduce international trade barriers after World War II.", "a": 0, "v": 100}, {"t": "tf", "q": "The globalization of markets refers to the growing independence and self-sufficiency of countries worldwide.", "a": 1, "v": 200}, {"t": "mc", "q": "Apple's product assembly facilities abroad that produce its iPhone are best described as ________.", "o": ["foreign direct investment", "forces of globalization", "factors of production", "international trade"], "a": 0, "v": 300}, {"t": "mc", "q": "A business that has direct investments (in the form of marketing or manufacturing subsidiaries) abroad in several countries is called a ________.", "o": ["domestic corporation", "shell corporation", "multinational corporation", "global corporation"], "a": 2, "v": 400}, {"t": "mc", "q": "A company with a global perspective that engages in international business from inception and quickly achieves a competitive advantage is called a ________.", "o": ["transnational corporation", "multinational corporation", "born global firm", "global firm"], "a": 2, "v": 500}, {"t": "mc", "q": "Under the WTO agreement, ________.", "o": ["a dispute resolution mechanism allows countries to bring grievances to the WTO against countries that levy inappropriate trade discrimination measures", "there is no dispute resolution mechanism except for trade involving environmental products", "countries are allowed to place trade barriers on member countries with no particular justification, because like GATT the WTO has no enforcement mechanism", "tariffs are permitted to be levied by developed countries against developing countries"], "a": 0, "v": 600}, {"t": "mc", "q": "Globalization is criticized because it ________.", "o": ["does not generate labor market flexibility in developing nations", "prevents developed countries from outsourcing work to developing nations", "creates fewer manufacturing jobs in developing nations", "exploits workers in low-wage nations"], "a": 3, "v": 700}]}, {"ch": "Ch. 3", "name": "Culture", "clues": [{"t": "tf", "q": "Subcultures exist only within a nation's borders.", "a": 1, "v": 100}, {"t": "tf", "q": "A nuclear family comprises of one's immediate family, along with grandparents, uncles, aunts, and cousins.", "a": 1, "v": 200}, {"t": "mc", "q": "A class system is a system of social stratification in which ________.", "o": ["people are divided into various political groups and subgroups", "a person's social rank depends upon his/her parentage", "people join highly exclusive associations that forbid external interaction", "personal ability and actions determine an individual's social status and mobility"], "a": 3, "v": 300}, {"t": "mc", "q": "Cultural attitudes ________.", "o": ["are the means by which a society's members communicate with each other", "are the overall framework that determines the roles of individuals within a society", "shape the behavior of and opportunities available to international businesses operating in a given culture", "stem from deep-seated beliefs about the individual's position in relation to his or her deity"], "a": 2, "v": 400}, {"t": "mc", "q": "A caste system is a system of social stratification in which ________.", "o": ["a person's social status is decided by his acquired wealth", "a person's position in society depends upon his educational qualifications and achievements", "people are born into a social ranking, with no opportunity for social mobility", "people join highly exclusive associations that encourage external interaction"], "a": 2, "v": 500}, {"t": "mc", "q": "The French Government promotes the concept of ________ by building museums and monuments to preserve the legacies of important events and people.", "o": ["subculture", "national culture", "popular culture", "monoculture"], "a": 1, "v": 600}, {"t": "mc", "q": "Religion ________.", "o": ["is the exclusive means by which a society's members communicate with each other", "shapes the attitudes its adherents have toward work, consumption, individual responsibility, and planning for the future", "is the overall framework that determines the roles of individuals within a society, the stratification of the society, and the individuals' mobility within the society", "remains one of the least important elements of culture"], "a": 1, "v": 700}]}, {"ch": "Ch. 4", "name": "Political & Legal Systems", "clues": [{"t": "tf", "q": "A political system in which a country's religious leaders are also its political leaders is called a theocracy.", "a": 0, "v": 100}, {"t": "tf", "q": "Communists are socialists, but socialists are not necessarily communist.", "a": 0, "v": 200}, {"t": "mc", "q": "________ is based on the cumulative wisdom of judges' decisions on individual cases through history.", "o": ["Common law", "Civil law", "Statutory law", "Bureaucratic law"], "a": 0, "v": 300}, {"t": "mc", "q": "________ refers to a political system in which government is organized by and accountable to the people.", "o": ["Totalitarianism", "Fascism", "Socialism", "Democracy"], "a": 3, "v": 400}, {"t": "mc", "q": "Which of the following is an advantage of conducting business in totalitarian nations?", "o": ["International companies are less likely to face local political opposition to their activities.", "Government deals are always straightforward and transparent.", "Laws regarding the resolution of contractual disputes are clearly defined.", "International companies run no risk of their public image being tarnished."], "a": 0, "v": 500}, {"t": "mc", "q": "The government maintains control over the banking industry in a country. Which of the following is most likely TRUE if the country has a mixed economy?", "o": ["Businesses in most economic sectors of the country are privately owned.", "The government considers banking sector as important to national security.", "The country has never experienced threats against its long-term stability.", "The government views banking as more important than manufacturing."], "a": 1, "v": 600}, {"t": "mc", "q": "Which of the following is an important factor in forming successful business ventures in China?", "o": ["Following the strategies of western countries for establishing business relationships", "Focusing on establishing tight formal contracts", "Giving high importance to written contracts", "Establishing a trusting relationship before proceeding with business"], "a": 3, "v": 700}]}, {"ch": "Ch. 5", "name": "Government & Trade", "clues": [{"t": "tf", "q": "The shadow economy (also called the hidden, gray, cash, or informal economy) includes economic activities that have market value but are not formally registered.", "a": 0, "v": 100}, {"t": "tf", "q": "Volunteer work and unpaid household work are included in GNP.", "a": 1, "v": 200}, {"t": "mc", "q": "Which of the following measures the extent to which a government equitably provides its people with a long and healthy life, an education, and a decent standard of living?", "o": ["Category development index", "Gross national product index", "Human development index", "Purchasing power index"], "a": 2, "v": 300}, {"t": "mc", "q": "Which of the following terms refers to the broadest measure of economic development of a country?", "o": ["Gross domestic product (GDP)", "Purchasing power parity (PPP)", "Gross national product (GNP)", "Human development index (HDI)"], "a": 2, "v": 400}, {"t": "mc", "q": "Which of the following is TRUE about economic development of a nation?", "o": ["The purchasing power parity is a poor indicator of a people's total well-being.", "GDP is a larger figure and includes a nation's income generated from exports, imports, and international operations.", "Illegal activities such as gambling and black-market transactions are considered in GDP and GNP.", "Using gross product figures to compare production across countries accounts for different cost of living in each country."], "a": 0, "v": 500}, {"t": "mc", "q": "Which of the following statements about approaches to political risk management is NOT true?", "o": ["Passive political risk management discourages managers from fully or partially hedging their bets against exposure to political hazards.", "Passive political risk management assumes that it is difficult, if not impossible, to systematically model political risk.", "Active political risk management assumes that positive and negative political events in any country are neither independent nor random events.", "Active political risk management assumes that political events unfold in observable patterns that statistical methods can detect."], "a": 0, "v": 600}, {"t": "mc", "q": "Which of the following is a major obstacle to economic transition?", "o": ["Lack of government support", "Environmental degradation", "Privatization", "Black markets"], "a": 1, "v": 700}]}, {"ch": "Ch. 8", "name": "Foreign Direct Investment", "clues": [{"t": "tf", "q": "Portfolio investment is the purchase of physical assets of a company in another country to gain a degree of management control.", "a": 1, "v": 100}, {"t": "tf", "q": "A current account surplus occurs when a country exports more goods and receives more income from abroad than it imports and pays abroad.", "a": 0, "v": 200}, {"t": "mc", "q": "Which type of investment does NOT involve obtaining management control in a company?", "o": ["Direct investment", "Portfolio investment", "Capital investment", "Controlling ownership"], "a": 1, "v": 300}, {"t": "mc", "q": "The extension of a company's activities into stages of production that absorb the company's outputs is known as ________.", "o": ["forward integration", "backward integration", "an internalization advantages", "an ownership advantages"], "a": 0, "v": 400}, {"t": "mc", "q": "A system of production in which each of a product's components is produced in the location where the cost of producing that component is lowest is called ________ production.", "o": ["rationalized", "craft", "job", "customized"], "a": 0, "v": 500}, {"t": "mc", "q": "Coca-Cola has collaborative arrangements whereby it produces concentrate that it sells to other companies to bottle its drinks. Which of the following terms best describes this type of arrangement?", "o": ["Vertical integration", "Horizontal integration", "Link alliance", "Scale alliance"], "a": 0, "v": 600}, {"t": "mc", "q": "Which of the following is a reason behind intervention by a host country on matters related to FDI?", "o": ["To keep their balance of payments under control", "To protect their outdated technology and management skills", "To strictly encourage the establishment of sunset industries", "To decrease the country's competitiveness in the global market"], "a": 0, "v": 700}]}], "final": {"q": "In a market economy, the patterns of resource allocation are most directly influenced by ________.", "o": ["government administrators who monitor the equilibrium of supply and demand", "industry coalitions that strive to improve the efficiency of production and service", "consumer group alliances that negotiate with firms to improve product quality", "consumers who \"vote\" by their personal decision to buy or not buy products"], "a": 3, "ch": "Ch. 4", "name": "Political & Legal Systems"}};
+const KEY='ib-midterm-jeopardy-r2';
+const L='ABCD';
+let S = {teams:[],used:{},turn:0,secs:60};
+function load(){
+  try{const r=localStorage.getItem(KEY); if(r){const o=JSON.parse(r); if(o&&o.teams&&o.teams.length) S=Object.assign(S,o);}}catch(e){}
+  if(!S.teams.length) S.teams=[1,2,3,4].map(i=>({name:'Team '+i,score:0}));
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+const $=id=>document.getElementById(id);
+const el=(t,c,x)=>{const e=document.createElement(t); if(c)e.className=c; if(x!=null)e.textContent=x; return e;};
+
+const startMusic=()=>{},stopMusic=()=>{},buzz=()=>{},chime=()=>{};
+const money=n=>(n<0?'−$':'$')+Math.abs(n).toLocaleString('en-US');
+
+function renderBoard(){
+  const b=$('board'); b.replaceChildren();
+  DATA.cats.forEach(c=>{const h=el('div','cat'); h.append(el('span',null,c.ch), el('b',null,c.name)); b.append(h);});
+  for(let r=0;r<7;r++) DATA.cats.forEach((c,ci)=>{
+    const k=ci+'-'+r, cl=c.clues[r];
+    const t=el('button','tile'+(S.used[k]?' used':''), S.used[k]?'':'$'+cl.v);
+    t.disabled=!!S.used[k];
+    t.setAttribute('aria-label',c.name+' for $'+cl.v+(S.used[k]?' (used)':''));
+    t.onclick=()=>openClue(ci,r);
+    b.append(t);
+  });
+}
+function renderTeams(){
+  const w=$('teams'); w.replaceChildren();
+  S.teams.forEach((t,i)=>{
+    const d=el('div','team'+(i===S.turn?' turn':''));
+    const nm=el('input','nm'); nm.value=t.name; nm.setAttribute('aria-label','Team '+(i+1)+' name');
+    nm.oninput=()=>{t.name=nm.value; save(); $('pickName').textContent=S.teams[S.turn].name;};
+    const sc=el('div','score'+(t.score<0?' neg':''),money(t.score));
+    const adj=el('div','adj');
+    [[-100,'−100'],[100,'+100']].forEach(([v,l])=>{const b=el('button',null,l); b.setAttribute('aria-label',l+' points for '+t.name); b.onclick=()=>{t.score+=v; save(); renderTeams();}; adj.append(b);});
+    const pk=el('button','turnbtn','pick next'); pk.onclick=()=>{S.turn=i; save(); renderTeams();};
+    d.append(nm,sc,adj,pk); w.append(d);
+  });
+  $('pickName').textContent=S.teams[S.turn].name;
+}
+
+/* ---------- clue overlay ---------- */
+let tick=null, applied={}, cur=null;
+const ov=$('ov');
+function stopTimer(){clearInterval(tick); tick=null; stopMusic();}
+function timerBox(){
+  const box=el('div','timer'); const clock=el('div','clock'); const go=el('button','btn','Start timer'); const stop=el('button','btn','Pause');
+  let left=S.secs; const bar=el('div','bar'); const fill=el('i'); bar.append(fill);
+  const draw=()=>{clock.textContent=Math.floor(left/60)+':'+String(left%60).padStart(2,'0'); clock.classList.toggle('low',left<=10&&left>0); fill.style.width=(left/S.secs*100)+'%';};
+  draw();
+  go.onclick=()=>{stopTimer(); if(left<=0) left=S.secs; draw(); startMusic(); tick=setInterval(()=>{left--; draw(); if(left<=0){stopTimer(); clock.textContent="Time!"; buzz();}},1000);};
+  stop.onclick=stopTimer;
+  box.append(clock,go,stop);
+  return {box,bar};
+}
+function optsEl(c, revealed){
+  const wrap=el('div','opts');
+  const items = c.t==='tf'?['TRUE','FALSE']:c.o;
+  items.forEach((txt,i)=>{
+    const o=el('div','opt'+(c.t==='tf'?' tfopt':'')+(revealed?(i===c.a?' right':' dim'):''));
+    if(c.t!=='tf') o.append(el('span','l',L[i]+'.'));
+    o.append(el('span',null,(revealed&&i===c.a?'✓ ':'')+txt));
+    wrap.append(o);
+  });
+  return wrap;
+}
+function openClue(ci,r){
+  const cat=DATA.cats[ci], c=cat.clues[r]; cur={ci,r,c};
+  applied={}; let revealed=false;
+  const build=()=>{
+    stopTimerKeep();
+    ov.replaceChildren();
+    const head=el('div','ovhead');
+    head.append(el('div','tag',cat.ch+' · '+cat.name+' · $'+c.v));
+    const tm=timerBox(); head.append(tm.box);
+    ov.append(head, tm.bar);
+    ov.append(el('div','kind', c.t==='tf'?'True or false?':'Choose the best answer'));
+    ov.append(el('p','q',c.q));
+    ov.append(optsEl(c,revealed));
+    const acts=el('div','acts');
+    const rv=el('button','btn gold',revealed?'Hide answer':'Show answer'); rv.onclick=()=>{revealed=!revealed; keep=tm; rebuildKeepTimer();};
+    const cl=el('button','btn','Close clue'); cl.onclick=()=>closeClue(true);
+    acts.append(rv,cl); ov.append(acts);
+    const aw=el('div','award');
+    S.teams.forEach((t,i)=>{
+      const row=el('div','arow'); row.append(el('span',null,t.name));
+      const up=el('button','up'+(applied[i]===1?' on':''),'+'+c.v), dn=el('button','dn'+(applied[i]===-1?' on':''),'−'+c.v);
+      up.className='up'+(applied[i]===1?' on up':''); dn.className='dn'+(applied[i]===-1?' on dn':'');
+      const set=v=>{const prev=applied[i]||0, nv=(prev===v)?0:v; if(nv===1)chime(); t.score+=(nv-prev)*c.v; applied[i]=nv; save(); renderTeams(); refreshAward();};
+      up.onclick=()=>set(1); dn.onclick=()=>set(-1);
+      row.append(up,dn); aw.append(row);
+    });
+    ov.append(aw);
+  };
+  /* rebuild without resetting the running timer: re-render only the changeable parts */
+  let keep=null;
+  function stopTimerKeep(){}
+  function rebuildKeepTimer(){ // simple approach: swap answer state in place
+    const q=ov.querySelector('.opts'); q.replaceWith(optsEl(c,revealed));
+    ov.querySelector('.acts .gold').textContent=revealed?'Hide answer':'Show answer';
+  }
+  function refreshAward(){
+    const rows=ov.querySelectorAll('.arow');
+    rows.forEach((row,i)=>{const b=row.querySelectorAll('button'); b[0].className='up'+(applied[i]===1?' on up':''); b[1].className='dn'+(applied[i]===-1?' on dn':'');});
+  }
+  build();
+  ov.hidden=false; ov.scrollTop=0;
+}
+function closeClue(markUsed){
+  stopTimer(); ov.hidden=true; ov.replaceChildren();
+  if(markUsed&&cur){S.used[cur.ci+'-'+cur.r]=true; S.turn=(S.turn+1)%S.teams.length; save(); renderBoard(); renderTeams();}
+  cur=null;
+}
+
+/* ---------- final jeopardy ---------- */
+function openFinal(){
+  const f=DATA.final; stopTimer(); ov.hidden=false; ov.scrollTop=0;
+  let wagers=S.teams.map(()=>0), fapplied={}, stage='wager';
+  const render=()=>{
+    stopTimer(); ov.replaceChildren();
+    const head=el('div','ovhead'); head.append(el('div','tag','Final Jeopardy · '+f.ch+' · '+f.name));
+    const close=el('button','btn','Back to board'); close.onclick=()=>{stopTimer(); ov.hidden=true; ov.replaceChildren();};
+    head.append(close); ov.append(head);
+    if(stage==='wager'){
+      ov.append(el('p','q','Final Jeopardy. Category: '+f.name+'. Each team writes a wager before seeing the clue.'));
+      const w=el('div','wager');
+      S.teams.forEach((t,i)=>{
+        const lab=el('label'); lab.append(el('span',null,t.name));
+        const inp=el('input'); inp.type='number'; inp.min=0; inp.max=Math.max(t.score,0); inp.value=wagers[i]; inp.id='wg'+i; inp.inputMode='numeric';
+        inp.oninput=()=>{let v=parseInt(inp.value,10)||0; wagers[i]=Math.max(0,Math.min(v,Math.max(t.score,0)));};
+        lab.append(inp, el('small',null,'Can wager $0 to '+money(Math.max(t.score,0))));
+        w.append(lab);
+      });
+      ov.append(w);
+      const a=el('div','acts'); const go=el('button','btn gold','Show the clue'); go.onclick=()=>{stage='clue'; render();}; a.append(go); ov.append(a);
+    } else {
+      let revealed=stage==='answer';
+      const tm=timerBox(); ov.firstChild.append(tm.box); ov.insertBefore(tm.bar, ov.children[1]);
+      ov.append(el('div','kind','Choose the best answer'));
+      ov.append(el('p','q',f.q));
+      ov.append(optsEl({t:'mc',o:f.o,a:f.a},revealed));
+      const a=el('div','acts');
+      if(!revealed){const rv=el('button','btn gold','Show answer'); rv.onclick=()=>{stage='answer'; render();}; a.append(rv);}
+      ov.append(a);
+      if(revealed){
+        ov.append(el('div','kind','Score each team (wager is added or taken away)'));
+        const aw=el('div','award');
+        S.teams.forEach((t,i)=>{
+          const row=el('div','arow'); row.append(el('span',null,t.name+' · wager '+money(wagers[i])));
+          const up=el('button','up','+'), dn=el('button','dn','−');
+          const paint=()=>{up.className='up'+(fapplied[i]===1?' on up':''); dn.className='dn'+(fapplied[i]===-1?' on dn':'');};
+          const set=v=>{const prev=fapplied[i]||0, nv=prev===v?0:v; if(nv===1)chime(); t.score+=(nv-prev)*wagers[i]; fapplied[i]=nv; save(); renderTeams(); paint(); showWinner();};
+          up.onclick=()=>set(1); dn.onclick=()=>set(-1); paint();
+          row.append(up,dn); aw.append(row);
+        });
+        ov.append(aw);
+        const wn=el('div','winner'); wn.id='winner'; ov.append(wn); showWinner();
+      }
+    }
+  };
+  const showWinner=()=>{
+    const w=$('winner'); if(!w) return;
+    const mx=Math.max(...S.teams.map(t=>t.score)); const names=S.teams.filter(t=>t.score===mx).map(t=>t.name);
+    w.textContent='Leading: '+names.join(' & ')+' · '+money(mx);
+  };
+  render();
+}
+
+/* ---------- answer key ---------- */
+function openKey(){
+  ov.hidden=false; ov.scrollTop=0; ov.replaceChildren();
+  const head=el('div','ovhead'); head.append(el('div','tag','Host answer key (do not share this screen)'));
+  const close=el('button','btn','Close'); close.onclick=()=>{ov.hidden=true; ov.replaceChildren();}; head.append(close); ov.append(head);
+  const k=el('div','key');
+  const fmt=(c)=>{
+    const li=el('li'); li.append(el('span','kq','$'+(c.v||'')+' · '+c.q));
+    const ans=c.t==='tf'?(c.a===0?'TRUE':'FALSE'):L[c.a]+'. '+c.o[c.a];
+    li.append(document.createElement('br'), el('span','ka','Answer: '+ans)); return li;
+  };
+  DATA.cats.forEach(c=>{const s=el('section'); s.append(el('h3',null,c.ch+' · '+c.name)); const ol=el('ol'); c.clues.forEach(x=>ol.append(fmt(x))); s.append(ol); k.append(s);});
+  const s=el('section'); s.append(el('h3',null,'Final Jeopardy · '+DATA.final.name)); const ol=el('ol'); ol.append(fmt({v:'',t:'mc',q:DATA.final.q,o:DATA.final.o,a:DATA.final.a})); s.append(ol); k.append(s);
+  ov.append(k);
+}
+
+/* ---------- wiring ---------- */
+$('keyBtn').onclick=openKey;
+$('finalBtn').onclick=openFinal;
+let confirmT=null;
+$('resetBtn').onclick=function(){
+  if(confirmT){clearTimeout(confirmT); confirmT=null; this.textContent='Reset game';
+    S.teams.forEach(t=>t.score=0); S.used={}; S.turn=0; save(); renderBoard(); renderTeams(); return;}
+  this.textContent='Click again to clear all scores'; confirmT=setTimeout(()=>{confirmT=null; this.textContent='Reset game';},4000);
+};
+$('tPlus').onclick=()=>{if(S.teams.length<8){S.teams.push({name:'Team '+(S.teams.length+1),score:0}); save(); renderTeams();}};
+$('tMinus').onclick=()=>{if(S.teams.length>2){S.teams.pop(); if(S.turn>=S.teams.length)S.turn=0; save(); renderTeams();}};
+$('tsec').onchange=e=>{S.secs=parseInt(e.target.value,10); save();};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!ov.hidden){ if(cur) closeClue(false); else {stopTimer(); ov.hidden=true; ov.replaceChildren();}}});
+load(); $('tsec').value=String(S.secs); renderBoard(); renderTeams();
+</script>
+
+</body></html>
